@@ -23,23 +23,31 @@ C, ORACLE, proc, visual studio
 
 ## 데모 이미지
 * 회원 기능 
+
 ![image](https://user-images.githubusercontent.com/56015030/95678003-7ce95100-0c04-11eb-9b3d-67ecb70380bb.png)
+
 회원 추가
 
 ![image](https://user-images.githubusercontent.com/56015030/95678020-97bbc580-0c04-11eb-9ec1-2415e31c7290.png)
+
 회원 정보 변경
 
 
 * 좌석 기능
+
 ![image](https://user-images.githubusercontent.com/56015030/95678045-be79fc00-0c04-11eb-9036-3f98d9d5f46c.png)
+
 자리 상태 확인 
 
 ![image](https://user-images.githubusercontent.com/56015030/95678057-d2bdf900-0c04-11eb-9075-5780d7f6248f.png)
+
 좌석 사용 설정 
 
 ![image](https://user-images.githubusercontent.com/56015030/95678064-e0737e80-0c04-11eb-9577-57631d9a3b0f.png)
+
 좌석 사용 종료
 
 ![image](https://user-images.githubusercontent.com/56015030/95678066-f1bc8b00-0c04-11eb-97e2-b5679e54db04.png)
+
 게임 상태 변경 
 

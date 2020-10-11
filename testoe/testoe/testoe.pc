@@ -1,0 +1,1940 @@
+#define _CRT_SECURE_NO_WARNINGS
+/*
+   SQL - 요구하고 응답하는 단순 질의어 - 관리자가 씀
+   PL/SQL - SQL+Programming - 오라클 Programming
+   PRO*C - SQL + PL/SQL + C - exe 배포 일반
+   PROC는 SQL 명령 앞에 EXEC를 적어야 함
+   마지막에 ;
+   주키  : not null, unique
+   외래키 : 생략 가능, null 가능, unique 해야 함
+   
+*/
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#include <conio.h>
+#include <windows.h>
+
+/* for oracle */
+#include <sqlda.h>
+#include <sqlca.h>
+#include <sqlcpr.h>
+void init(); // 초기화 함수임 초기화 메뉴
+void DB_connect(); // DB 연결
+void sql_error(char *msg); // sql 에러
+void selectMember(); // 멤버 출력
+void selectStock(); // 재고 출력
+void selectSeat(); // 좌석 출력 
+void memberInsert(); // 멤버 추가
+void memberUpdate(); // 멤버 변경
+void memberMode();
+void seatMode();
+void stockMode();
+void saleMode();
+void selectPCSale();
+void selectFoodSale();
+void PCSaleMode();
+void foodSaleMode();
+void selectSeatUser();
+void seatUserFinUpdate();
+void seatUserStartUpdate();
+void seatUserGameUpdate();
+void insertStock();
+void updateStock();
+void deleteStock();
+void selectSale();
+void PCInsert();
+void PCDelete();
+void FoodInsert();
+void FoodDelete();
+void selectBlackList();
+
+EXEC SQL BEGIN DECLARE SECTION;
+   VARCHAR uid[80];
+   VARCHAR pwd[20];
+   
+EXEC SQL END DECLARE SECTION;
+
+#define getch()  _getch()
+
+void main() {
+	DB_connect();
+
+	system("title 햄버거 조의 고급 PC방");
+
+	int flag = 0;
+
+	  do {
+	  printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+	  printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+	printf("-------------------   어서 오세요. 고급 PC방입니다.  --------------------\n");
+	printf("-------------------           PC방 이용 수칙         --------------------\n");
+	printf("--------------  1. 본체 및 PC방 부품을 훼손하지 않는다.  ----------------\n");
+	printf("--------------  2. 사용한 자리는 치운다. (알바생이 힘들어요)  -----------\n");
+	printf("--------------  3. 야간 사용은 하지 않는다. (집에 갑시다)  --------------\n");
+	printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+	  printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+
+      printf("메뉴를 선택해주세요. \n");
+      printf("1. 회원   2. 좌석   3. 재고   4. 매출   5. 초기화  (0. 시스템 종료) \n");
+      scanf("%d", &flag);
+
+
+      switch(flag){
+		case -1: // 블랙리스트 
+			printf("\n");
+			system("cls");
+			selectBlackList();
+			break;
+         case 0:
+            break;
+         case 1: //회원
+            printf("\n");
+			system("cls");
+            printf("회원 테이블을 확인합니다.\n");
+            printf("\n");
+            memberMode();
+            break;
+         case 2:
+            printf("\n");
+			system("cls");
+            printf("좌석 테이블을 확인합니다.\n");
+            printf("\n");
+            seatMode();
+            break;
+         case 3:
+            printf("\n");
+			system("cls");
+            printf("재고 테이블을 확인합니다.\n");
+            stockMode();
+            printf("\n");
+            break;
+         case 4:
+            printf("\n");
+			system("cls");
+            printf("매출 테이블을 확인합니다.\n");
+            saleMode();
+            printf("\n");
+            break;
+		case 5:
+			init();
+			break;
+		default:
+			break;
+            
+      }
+   } while(flag != 0);
+  
+   getch();
+
+}
+
+void memberMode(){
+	int flag = 0;
+	do{
+	printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+	printf("------------------                                  -------------------\n");
+	printf("------------------           회원 정보 확인         -------------------\n");
+	printf("------------------                                  -------------------\n");
+	printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+		selectMember();
+		printf("실행할 옵션을 선택해주세요.   0을 누르면 메인 화면으로 돌아갑니다.\n");
+		printf("1. 회원 추가 2. 회원 정보 변경 \n");
+		scanf("%d", &flag);
+
+		switch(flag){
+			case 0:
+				break;
+			case 1: // 회원 추가
+				memberInsert();
+				system("cls");
+				break;
+			case 2: // 회원 정보 변경
+				memberUpdate();
+				system("cls");
+				break;
+			default:
+				break;
+		}
+	}while(flag != 0);
+	system("cls");
+}
+
+void seatMode(){
+	int flag = 0;
+	do{
+	printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+	printf("------------------                                  -------------------\n");
+	printf("------------------           좌석 정보 확인         -------------------\n");
+	printf("------------------                                  -------------------\n");
+	printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+		selectSeat();
+		printf("실행할 옵션을 선택해주세요.   0을 누르면 메인 화면으로 돌아갑니다.\n");
+		printf("1. 자리 상태 확인 2. 좌석 사용 설정 3. 좌석 사용 종료 4. 게임 상태 변경 \n");
+		scanf("%d", &flag);
+
+		switch(flag){
+			case 0:
+				break;
+			case 1: // 자리 상태 확인
+				selectSeatUser();
+				system("cls");
+				break;
+			case 2: // 좌석 사용 설정
+				seatUserStartUpdate();
+				system("cls");
+				break;
+			case 3: // 좌석 사용 종료
+				seatUserFinUpdate();
+				system("cls");
+				break;
+			case 4: // 게임 상태 변경
+				seatUserGameUpdate();
+				system("cls");
+				break;
+			default:
+				break;
+		}
+	}while(flag != 0);
+	system("cls");
+}
+
+void stockMode(){
+	int flag = 0;
+	do{
+	
+	printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+	printf("------------------                                  -------------------\n");
+	printf("------------------           재고 정보 확인         -------------------\n");
+	printf("------------------                                  -------------------\n");
+	printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+		selectStock();
+		printf("실행할 옵션을 선택해주세요.   0을 누르면 메인 화면으로 돌아갑니다.\n");
+		printf("1. 물품 추가 2. 재고 수정 3. 물품 삭제 \n");
+		scanf("%d", &flag);
+
+		switch(flag){
+			case 0:
+				break;
+			case 1: // 물품 추가
+				insertStock();
+				system("cls");
+				break;
+			case 2: // 재고 수정
+				updateStock();
+				system("cls");
+				break;
+			case 3: // 물품 삭제
+				deleteStock();
+				system("cls");
+				break;
+			default:
+				break;
+		}
+	}while(flag != 0);
+	system("cls");
+}
+
+void saleMode(){
+	int flag = 0;
+	do{
+	
+	printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+	printf("------------------                                  -------------------\n");
+	printf("------------------           매출 정보 확인         -------------------\n");
+	printf("------------------                                  -------------------\n");
+	printf("--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--*--\n");
+		printf("실행할 옵션을 선택해주세요.   0을 누르면 메인 화면으로 돌아갑니다.\n");
+		printf("1. 전체 매출 확인 2. pc 매출 확인 3. 음식 매출 확인 \n");
+		scanf("%d", &flag);
+
+		switch(flag){
+			case 0:
+				break;
+			case 1: //전체 매출 리스트 출력만
+				selectSale();
+				system("cls");
+				break;
+			case 2: // PC 매출 모드
+				PCSaleMode();
+				system("cls");
+				break;
+			case 3: // 음식 매출 모드 
+				foodSaleMode();
+				system("cls");
+				break;
+			default:
+				break;
+		}
+	}while(flag != 0);
+	system("cls");
+}
+
+void PCSaleMode(){
+   int flag = 0;
+   do{
+      selectPCSale();
+      printf("실행할 옵션을 선택해주세요.   0을 누르면 메인 화면으로 돌아갑니다.\n");
+      printf(" 1. 이용권 구매 2. 금액 환불 \n");
+      scanf("%d", &flag);
+      switch(flag){
+         case 0:
+            break;
+         case 1:  // 이용권 구매
+            PCInsert();
+			system("cls");
+            break;
+         case 2: // 금액 환불
+         PCDelete();
+		 system("cls");
+            break;
+         default:
+            break;
+      }
+   }while(flag != 0);
+   system("cls");
+}
+
+void foodSaleMode(){
+   int flag = 0;
+   do{
+      selectFoodSale();
+      printf("실행할 옵션을 선택해주세요.   0을 누르면 메인 화면으로 돌아갑니다.\n");
+      printf("1. 음식 구매 2. 금액 환불 \n");
+      scanf("%d", &flag);
+      switch(flag){
+         case 0:
+            break;
+         case 1:  // 음식 구매
+         FoodInsert();
+		 system("cls");
+            break;
+         case 2: // 금액 환불
+         FoodDelete();
+		 system("cls");
+            break;
+         default:
+            break;
+      }
+   }while(flag != 0);
+   system("cls");
+}
+
+
+void selectBlackList(){
+   int i = 0;
+    int count = 0;
+    int bfCount = 0;
+    int end_flag = 1;
+    EXEC SQL BEGIN DECLARE SECTION;
+    VARCHAR blackListMemberID[100][50];
+    VARCHAR name[100][50];
+    VARCHAR reason[100][50];
+    EXEC SQL END DECLARE SECTION;
+   EXEC SQL DECLARE BLACKLISTCURSOR CURSOR FOR SELECT * FROM BLACKLIST;
+    
+    EXEC SQL OPEN BLACKLISTCURSOR;
+	printf("--*--*--*--*--*--*--*--* 블 랙 리 스 트 -*--*--*--*--*--*--*--*--*--\n");
+
+   while (end_flag) {
+        EXEC SQL FETCH BLACKLISTCURSOR INTO :blackListMemberID, :name, :reason ;
+        if (sqlca.sqlcode != 0) {
+            if (sqlca.sqlcode == 1403) {
+                end_flag = 0;
+            } else {
+                printf("ERROR : %s\n", sqlca.sqlerrm.sqlerrmc);
+            }
+         count = sqlca.sqlerrd[2] - bfCount;
+         bfCount = sqlca.sqlerrd[2];
+         
+         for( i = 0 ; i < count ; i++){
+         blackListMemberID[i].arr[blackListMemberID[i].len] = '\0';
+         name[i].arr[name[i].len] = '\0';
+         reason[i].arr[reason[i].len] = '\0';
+         printf("아이디 : %s\n", blackListMemberID[i].arr);
+         printf("이름 : %s\n", name[i].arr);
+         printf("사유 : %s\n",reason[i].arr);
+         }
+        
+     }
+   
+    }
+    
+    EXEC SQL CLOSE BLACKLISTCURSOR;
+
+	getch();
+	system("cls");
+}
+
+void memberInsert(){
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	VARCHAR memberID[50];
+	VARCHAR name[50];
+	VARCHAR password[50];
+	VARCHAR birthday[50];
+	int year;
+	int month;
+	int date;
+
+	int paidmoney = 0;
+	int leftmint = 0;
+
+	EXEC SQL END DECLARE SECTION;
+	
+		printf("회원을 추가합니다. \n");
+
+		printf("member ID : ");
+		scanf("%s", memberID.arr);
+		memberID.len = strlen(memberID.arr); 
+		printf("member name : ");
+		scanf("%s", name.arr);
+		name.len = strlen(name.arr); 
+		printf("member password : ");
+		scanf("%s", password.arr);
+		password.len = strlen(password.arr); 
+		printf("member birthday : ");
+		scanf("%s", birthday.arr);
+		birthday.len = strlen(birthday.arr); 
+		
+		EXEC SQL INSERT INTO member(memberid, name, password, birthday, paidmoney, leftmint) VALUES (:memberID ,:name ,:password ,TO_DATE(:birthday, 'RRRR-MM-DD') ,:paidmoney, :leftmint);
+		EXEC SQL COMMIT WORK;
+		printf("%s 님을 추가하였습니다. \n\n", name.arr);
+	
+	EXEC SQL COMMIT; 
+	getch();
+}
+
+void memberUpdate(){
+
+   EXEC SQL BEGIN DECLARE SECTION;
+
+   char memberID[50];
+   VARCHAR name[50];
+   VARCHAR password[50];
+   VARCHAR birthday[20];
+
+   char m_ID[50];
+   char m_name[50];
+   char m_password[50];
+   char m_birthday[20];
+   int m_paidmoney;
+   int m_leftmint;
+
+   int paidmoney;
+   int leftmint;
+
+   EXEC SQL END DECLARE SECTION;
+
+   printf("수정할 회원의 ID를 입력해주세요. : ");
+   scanf("%s", memberID);
+   
+	printf("회원 ID: %s\n", memberID);
+	EXEC SQL SELECT NAME, PASSWORD, TO_CHAR (BIRTHDAY, 'RRRR-MM-DD'), PAIDMONEY, LEFTMINT 
+	INTO :name, :password, :birthday, :paidmoney, :leftmint
+	FROM MEMBER
+	WHERE MEMBERID IN (SELECT memberid FROM member WHERE memberid = :memberID);
+
+	if(sqlca.sqlcode == 1403){
+		if(sqlca.sqlerrd[2] == 0){
+			printf("해당 회원이 존재하지 않습니다.\n");
+			return;
+		}
+	}
+
+	printf("\n");
+	
+	name.arr[name.len]='\0';
+	printf("이름 : %s\n", name.arr);
+	
+	birthday.arr[birthday.len]='\0';
+	printf("생년월일: %s\n", birthday.arr);
+	
+	printf("지불 금액: %d\n", paidmoney);
+	
+	printf("남은 시간: %d\n", leftmint); 
+	printf("\n");
+
+	printf("갱신 정보를 입력해주세요. -1을 입력하면 기존 정보로 설정됩니다.\n");
+
+	printf("이름 : ");
+	scanf("%s", m_name);
+	if(strcmp(m_name, "-1")==0){
+		strcpy(m_name,name.arr);
+		strncpy(m_name,name.arr, name.len);
+		m_name[name.len] = '\0';
+	}
+
+   printf("비밀번호 : ");
+   scanf("%s", m_password);
+   if(strcmp(m_password, "-1")==0){
+	  strncpy(m_password,password.arr, password.len);
+	  m_password[password.len] = '\0';
+   }
+
+   printf("생년월일 : ");
+   scanf("%s", m_birthday);
+   if(strcmp(m_birthday, "-1")==0){
+	  strncpy(m_birthday,birthday.arr, birthday.len);
+	  m_birthday[birthday.len] = '\0';
+   }
+
+   printf("지불 금액 : ");
+   scanf("%d", &m_paidmoney);
+   if(m_paidmoney == -1){
+		m_paidmoney = paidmoney;
+   }
+
+   printf("남은 시간 : ");
+   scanf("%d", &m_leftmint);
+   if(m_leftmint == -1){
+		m_leftmint = leftmint;
+   }
+
+   
+   EXEC SQL UPDATE member
+	  SET name = :m_name,
+	  password = :m_password,
+	  birthday = TO_DATE(:m_birthday,'RRRR-MM-DD'),
+	  paidmoney = :m_paidmoney,
+	  leftmint = :m_leftmint
+	  WHERE memberid = :memberID;
+   
+   printf("%s 님의 정보를 수정하였습니다.. \n", memberID);
+   
+   EXEC SQL COMMIT;
+   getch();
+}
+
+void selectPCSale() {
+    int i = 0;
+    int count = 0;
+    int bfCount = 0;
+    int end_flag = 1;
+    EXEC SQL BEGIN DECLARE SECTION;
+   int saleID[100];
+    VARCHAR memberID[100][50];
+    VARCHAR name[100][50];
+    VARCHAR DATE[100][20];
+    VARCHAR productName[100][50];
+    int price[100];
+    EXEC SQL DECLARE PCSALECURSOR CURSOR FOR SELECT PCSALE.SALEID, PCSALE.MEMBERID, MEMBER.NAME, TO_CHAR(DATETIME,'RRRR-MM-DD'),PRODUCTNAME ,PRICE 
+   FROM PCSALE, MEMBER
+    WHERE MEMBER.MEMBERID = PCSALE.MEMBERID;
+    EXEC SQL END DECLARE SECTION;
+    EXEC SQL OPEN PCSALECURSOR;
+   
+   printf("---------------------------------------------------------------------------------------\n");
+   printf("|  no.  |       ID       |   name   |  purchase date  |   product name   | paid money |\n");
+   printf("---------------------------------------------------------------------------------------\n");
+   // <space> no. : 7 , ID : 16 , name : 10 , purchase date : 17 , product name : 18 paid money : 12
+
+    while (end_flag) {
+        EXEC SQL FETCH PCSALECURSOR INTO:
+        saleID, :memberID, :name, :DATE, :productName, :price;
+        if (sqlca.sqlcode != 0) {
+            if (sqlca.sqlcode == 1403) {
+                end_flag = 0;
+            } else {
+                //printf("ERROR : %s\n", sqlca.sqlerrm.sqlerrmc);
+            }
+         count = sqlca.sqlerrd[2] - bfCount;
+         bfCount = sqlca.sqlerrd[2];
+       
+         for( i = 0 ; i < count ; i++){
+            printf("|  ");
+            printf("%-5d", saleID[i]);
+            printf("|  ");
+
+            memberID[i].arr[memberID[i].len]='\0';
+
+            printf("%-14s", memberID[i].arr);
+            printf("|  ");
+
+            name[i].arr[name[i].len]='\0';
+
+            printf("%-8s", name[i].arr);
+            printf("|  ");
+
+            DATE[i].arr[DATE[i].len]='\0';
+
+            printf("%-15s", DATE[i].arr);
+            printf("|  ");
+
+         productName[i].arr[productName[i].len]='\0';
+
+            printf("%-16s", productName[i].arr);
+            printf("|  ");
+
+            printf("%-10d", price[i]);
+            printf("|");
+            printf("\n");
+         }
+            
+        }
+      
+   printf("---------------------------------------------------------------------------------------\n");
+   printf("select count : %d\n",sqlca.sqlerrd[2]);
+    }
+    EXEC SQL CLOSE PCSALECURSOR;
+}
+
+
+
+void selectFoodSale(){
+int i = 0;
+    int count = 0;
+    int bfCount = 0;
+    int end_flag = 1;
+    EXEC SQL BEGIN DECLARE SECTION;
+   int saleID[100];
+    VARCHAR memberID[100][50];
+    VARCHAR name[100][50];
+    VARCHAR DATE[100][20];
+   VARCHAR productName[100][50];
+    int price[100];
+
+    EXEC SQL DECLARE FOODCURSOR CURSOR FOR SELECT FOODSALE.SALEID, FOODSALE.MEMBERID, MEMBER.NAME, TO_CHAR(DATETIME, 'RRRR-MM-DD'), PRODUCTNAME, PRICE
+    FROM FOODSALE, MEMBER
+    WHERE FOODSALE.MEMBERID = MEMBER.MEMBERID;
+    
+   EXEC SQL END DECLARE SECTION;
+    EXEC SQL OPEN FOODCURSOR;
+
+   printf("---------------------------------------------------------------------------------------\n");
+   printf("|  no.  |       ID       |   name   |  purchase date  |   product name   | paid money |\n");
+   printf("---------------------------------------------------------------------------------------\n");
+   // <space> no. : 7 , ID : 16 , name : 10 , purchase date : 17 , product name : 18 paid money : 12
+
+    while (end_flag) {
+        EXEC SQL FETCH FOODCURSOR INTO:
+        saleID, :memberID, :name, :DATE, :productName, :price;
+        if (sqlca.sqlcode != 0) {
+            if (sqlca.sqlcode == 1403) {
+                end_flag = 0;
+            } else {
+                printf("ERROR : %s\n", sqlca.sqlerrm.sqlerrmc);
+            }
+         count = sqlca.sqlerrd[2] - bfCount;
+         bfCount = sqlca.sqlerrd[2];
+         
+         for( i = 0 ; i < count ; i++){
+         printf("|  ");
+         printf("%-5d", saleID[i]);
+         printf("|  ");
+
+            memberID[i].arr[memberID[i].len]='\0';
+            printf("%-14s", memberID[i].arr);
+         printf("|  ");
+            
+         name[i].arr[name[i].len]='\0';
+            printf("%-8s", name[i].arr);
+            printf("|  ");
+
+         DATE[i].arr[DATE[i].len]='\0';
+            printf("%-15s", DATE[i].arr);
+            printf("|  ");
+
+         productName[i].arr[productName[i].len]='\0';
+            printf("%-16s", productName[i].arr);
+            printf("|  ");
+
+         printf("%-10d", price[i]);
+         printf("|\n");
+         }
+            
+        }
+      printf("---------------------------------------------------------------------------------------\n");
+      printf("select count : %d\n",sqlca.sqlerrd[2]);
+    }
+    EXEC SQL CLOSE FOODCURSOR;
+}
+
+
+void selectMember() {
+    int i = 0;
+    int count = 0;
+    int bfCount = 0;
+    int end_flag = 1;
+
+    EXEC SQL BEGIN DECLARE SECTION;
+    VARCHAR memberID[100][50];
+    VARCHAR name[100][50];
+    VARCHAR DATE[100][20];
+    int paidMoney[100];
+    int leftMin[100];
+
+    EXEC SQL DECLARE MEMBERCURSOR CURSOR FOR SELECT MEMBERID, NAME, TO_CHAR (BIRTHDAY, 'RRRR-MM-DD'),
+    PAIDMONEY, LEFTMINT
+    FROM MEMBER
+	WHERE memberid !='NULL';
+
+    EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL OPEN MEMBERCURSOR;
+    
+	while (end_flag) {
+        EXEC SQL FETCH MEMBERCURSOR INTO:
+        memberID, :name, :DATE, :paidMoney, :leftMin;
+        
+		if (sqlca.sqlcode != 0) {
+			if (sqlca.sqlcode == 1403) {
+				end_flag = 0;
+			} else {
+				printf("ERROR : %s\n", sqlca.sqlerrm.sqlerrmc);
+			}
+			count = sqlca.sqlerrd[2] - bfCount;
+			bfCount = sqlca.sqlerrd[2];
+			printf("select count : %d\n",sqlca.sqlerrd[2]);
+
+			printf("-----------------------------------------------------------------------------------------\n");
+			printf("|  no.  |          ID          |   name   |   Birthday   |  paid money  |  left minute  |\n");
+			printf("-----------------------------------------------------------------------------------------\n");
+			// <space> no. : 7 , ID : 22 , name : 10 ,  password : 20 , birthday : 14 , paid money : 14 , left minute : 15
+
+			 for( i = 0 ; i < count ; i++){
+				printf("|  ");
+				printf("%-5d", i+1);
+				printf("|  ");
+
+				memberID[i].arr[memberID[i].len]='\0';
+
+				printf("%-20s", memberID[i].arr);
+				printf("|  ");
+
+				name[i].arr[name[i].len]='\0';
+
+				printf("%-8s", name[i].arr);
+				printf("|  ");
+
+				DATE[i].arr[DATE[i].len]='\0';
+
+				printf("%-12s", DATE[i].arr);
+				printf("|  ");
+
+				printf("%-12d", paidMoney[i]);
+				printf("|  ");
+
+				printf("%-13d", leftMin[i]); 
+				printf("|  ");
+				printf("\n");
+			 }
+        }
+		printf("-----------------------------------------------------------------------------------------\n");
+    }
+    EXEC SQL CLOSE MEMBERCURSOR;
+}
+
+void selectStock() {
+    int i = 0;
+    int count = 0;
+    int bfCount = 0;
+    int end_flag = 1;
+    EXEC SQL BEGIN DECLARE SECTION;
+
+    VARCHAR productname[50][50];
+    int stock[50];
+    int price[50];
+    int purchaseprice[50];
+    
+    EXEC SQL DECLARE STOCKCURSOR CURSOR FOR SELECT productname, stock, price, purchaseprice
+    FROM stock;
+    EXEC SQL END DECLARE SECTION;
+    EXEC SQL OPEN STOCKCURSOR;
+    
+	while (end_flag) {
+        EXEC SQL FETCH STOCKCURSOR INTO
+		:productname, :stock, :price, :purchaseprice;
+        
+		if (sqlca.sqlcode != 0) {
+        if (sqlca.sqlcode == 1403) {
+            end_flag = 0;
+        } else {
+            printf("ERROR : %s\n", sqlca.sqlerrm.sqlerrmc);
+        }
+
+        count = sqlca.sqlerrd[2] - bfCount;
+        bfCount = sqlca.sqlerrd[2];
+        printf("select count : %d\n",sqlca.sqlerrd[2]);
+
+        printf("---------------------------------------------------------------------------------------\n");
+		printf("|   no.   |     product name     |     stock     |    price    |    purchase price    |\n");
+		printf("---------------------------------------------------------------------------------------\n");
+		// <space> no. : 9 , product name : 22 , stock : 15 , price : 13 , purchase price : 22
+
+         for( i = 0 ; i < count ; i++){
+			printf("|");
+			printf("%-9d", i+1);
+			printf("|");
+
+            productname[i].arr[productname[i].len]='\0';
+
+            printf("%-22s", productname[i].arr);
+			printf("|");
+
+
+            printf("%-15d", stock[i]);
+			printf("|");
+
+
+            printf("%-13d", price[i]);
+			printf("|");
+
+
+            printf("%-22d", purchaseprice[i]);
+			printf("|");
+			printf("\n");
+         }
+            
+        }
+		printf("---------------------------------------------------------------------------------------\n");
+    }
+    EXEC SQL CLOSE MEMBERCURSOR;
+}
+
+void selectSeat(){
+    int i = 0;
+	int j = 0;
+    int count = 0;
+    int bfCount = 0;
+    int end_flag = 1;
+    EXEC SQL BEGIN DECLARE SECTION;
+
+    int seatID[10];
+    VARCHAR name[50][50];
+    VARCHAR gamename[50][50];
+	
+	EXEC SQL DECLARE SEATCURSOR CURSOR FOR SELECT seat.seatid, NVL(member.name, '이름 없음'), 
+		CASE WHEN LENGTH(seat.gamename) BETWEEN 0 AND 3 THEN seat.gamename
+			ELSE DECODE(seat.gamename, 'NULL', ' ', SUBSTR(seat.gamename, 1, 3)||'..')
+      END "LOC"
+    FROM seat, member
+	WHERE seat.memberid = member.memberid;
+    EXEC SQL END DECLARE SECTION;
+    EXEC SQL OPEN SEATCURSOR;
+    
+	while (end_flag) {
+        EXEC SQL FETCH SEATCURSOR INTO
+		:seatID, :name, :gamename;
+        
+		if (sqlca.sqlcode != 0) {
+        if (sqlca.sqlcode == 1403) {
+            end_flag = 0;
+        } else {
+            printf("ERROR : %s\n", sqlca.sqlerrm.sqlerrmc);
+        }
+
+        count = sqlca.sqlerrd[2] - bfCount;
+        bfCount = sqlca.sqlerrd[2];
+        printf("select count : %d\n",sqlca.sqlerrd[2]);
+
+        
+		printf("-----------------------------------------------------------------\n");
+		printf("|           ||           ||           ||           ||           |\n");
+		// <space> no. : 5 , name : 8 , stock : 15 , price : 13 , purchase price : 22
+
+         for( i = 0 ; i < count ; i++){
+			
+			printf("| %-10d|", i+1);
+
+			if(i % 5 == 4){
+				printf("\n");
+
+				j = i-4;
+				do{
+					name[j].arr[name[j].len]='\0';
+					printf("| %-10s|", name[j].arr);
+					j++;
+				} while(j % 5 != 0);
+				
+				printf("\n");
+				
+				j = i-4;
+				do{
+					gamename[j].arr[gamename[j].len]='\0';
+					printf("| %-10s|", gamename[j].arr);
+					j++;
+				}while(j % 5 != 0);
+				
+				printf("\n");
+				printf("|           ||           ||           ||           ||           |\n");
+				printf("|           ||           ||           ||           ||           |\n");
+				printf("-----------------------------------------------------------------\n");
+				
+				printf("\n\n\n\n");
+				
+				printf("-----------------------------------------------------------------\n");
+				printf("|           ||           ||           ||           ||           |\n");
+		
+			}
+         }  
+
+        }
+    }
+	printf("|    고     ||     급    ||     P     ||     C     ||     방    |\n");
+	printf("|           ||           ||           ||           ||           |\n");
+	printf("-----------------------------------------------------------------\n");
+    EXEC SQL CLOSE MEMBERCURSOR;
+}
+
+void selectSeatUser(){
+	EXEC SQL BEGIN DECLARE SECTION;
+	int i_seatID;
+
+	int seatID;
+	VARCHAR seattype[50];
+	VARCHAR name[50];
+	VARCHAR gamename[50];
+	int leftmint;
+
+	EXEC SQL END DECLARE SECTION;
+
+	printf("조회할 좌석 번호를 입력해주세요. : ");
+	scanf("%d", &i_seatID);
+
+	EXEC SQL SELECT seat.seatid, seatinfo.seattype, NVL(member.name, '이름 없음'), DECODE(seat.gamename, '카트라이더', '로스라이더', seat.gamename), member.leftmint
+	INTO :seatID, :seattype, :name, :gamename, :leftmint
+	FROM seat, seatinfo, member
+	WHERE seat.memberid = member.memberid and seat.seattypeid = seatinfo.seattypeid and seat.seatID = :i_seatID;
+
+	if(sqlca.sqlcode == 1403){
+		if(sqlca.sqlerrd[2] == 0){
+			printf("해당 좌석이 존재하지 않습니다.\n");
+			return;
+		}
+	}
+
+	printf("\n");
+	
+	printf("좌석 번호 : %d\n", seatID);
+	
+	seattype.arr[seattype.len] = '\0';
+	printf("좌석 유형 : %s\n", seattype.arr);
+	
+	name.arr[name.len] = '\0';
+	printf("사용 회원 : %s\n", name.arr);
+	if(strcmp(name.arr, "빈자리") == 0){
+		printf("\n");
+		return;
+	}
+	
+	gamename.arr[gamename.len] = '\0';
+	printf("실행 중인 게임 : %s\n", gamename.arr); 
+
+	printf("남은 시간 : %d\n", leftmint); 
+
+	printf("\n");
+	getch();
+}
+
+void seatUserUpdate(){
+	EXEC SQL BEGIN DECLARE SECTION;
+	int i_seatID;
+
+	int seatID;
+	VARCHAR seattype[50];
+	VARCHAR name[50];
+	VARCHAR gamename[50];
+	int leftmint;
+
+	EXEC SQL END DECLARE SECTION;
+
+	printf("조회할 좌석 번호를 입력해주세요. : ");
+	scanf("%d", &i_seatID);
+
+	EXEC SQL SELECT seat.seatid, seatinfo.seattype, NVL(member.name, '이름 없음'), seat.gamename, member.leftmint
+	INTO :seatID, :seattype, :name, :gamename, :leftmint
+	FROM seat, seatinfo, member
+	WHERE seat.memberid = member.memberid and seat.seattypeid = seatinfo.seattypeid and seat.seatID = :i_seatID;
+
+	if(sqlca.sqlcode == 1403){
+		if(sqlca.sqlerrd[2] == 0){
+			printf("해당 좌석이 존재하지 않습니다.\n");
+			return;
+		}
+	}
+
+	printf("\n");
+	
+	printf("좌석 번호 : %d\n", seatID);
+	
+	seattype.arr[seattype.len] = '\0';
+	printf("좌석 유형 : %s\n", seattype.arr);
+	
+	name.arr[name.len] = '\0';
+	printf("사용 회원 : %s\n", name.arr);
+	if(strcmp(name.arr, "빈자리") == 0){
+		printf("\n");
+		return;
+	}
+	
+	gamename.arr[gamename.len] = '\0';
+	printf("실행 중인 게임 : %s\n", gamename.arr); 
+
+	printf("남은 시간 : %d\n", leftmint); 
+
+	printf("\n");
+	getch();
+}
+
+void seatUserFinUpdate(){
+	EXEC SQL BEGIN DECLARE SECTION;
+	int i_seatID;
+	char flag[10];
+
+	int seatID;
+	VARCHAR name[50];
+	int leftmint;
+
+	VARCHAR empty_memberID[50];
+
+	EXEC SQL END DECLARE SECTION;
+
+	printf("사용을 종료할 좌석 번호를 입력해주세요. : ");
+	scanf("%d", &i_seatID);
+
+	EXEC SQL SELECT seat.seatid, NVL(member.name, '이름 없음'), member.leftmint
+	INTO :seatID, :name, :leftmint
+	FROM seat, seatinfo, member
+	WHERE seat.memberid = member.memberid and seat.seattypeid = seatinfo.seattypeid and seat.seatID = :i_seatID;
+
+	if(sqlca.sqlcode == 1403){
+		if(sqlca.sqlerrd[2] == 0){
+			printf("해당 좌석이 존재하지 않습니다.\n");
+			return;
+		}
+	}
+
+	name.arr[name.len] = '\0';
+	if(strcmp(name.arr, "빈자리") == 0){
+		printf("해당 좌석은 비어있습니다.\n");
+		return;
+	}
+
+	printf("\n");
+	
+	printf("좌석 번호 : %d\n", seatID);
+	printf("사용 회원 : %s\n", name.arr);
+	printf("남은 시간 : %d\n", leftmint); 
+	
+	printf("\n");
+
+	printf("정말 종료하시겠습니까? (Y/N)\n");
+	scanf("%s", flag);
+
+	if(strcmp(flag, "Y")==0 || strcmp(flag, "y")==0){
+	
+		EXEC SQL SELECT memberid
+		INTO :empty_memberID
+		FROM member
+		WHERE name ='빈자리';
+
+		EXEC SQL UPDATE seat
+		SET memberid = :empty_memberID,
+		gamename = null
+		WHERE seatid = :i_seatID;
+   
+		printf("성공적으로 사용 종료 하였습니다. \n");
+   
+		EXEC SQL COMMIT;
+		
+
+	}else if(strcmp(flag, "N")==0 || strcmp(flag, "n")==0){
+	printf("취소합니다. \n");
+		return;
+	}
+	getch();
+}
+
+void seatUserStartUpdate(){
+	EXEC SQL BEGIN DECLARE SECTION;
+	int i_seatID;
+	int memberid_state;
+
+	char i_memberid[50];
+	char i_password[50];
+	VARCHAR memberid[50];
+	VARCHAR password[50];
+
+	int seatID;
+	VARCHAR name[50];
+	int leftmint;
+
+	EXEC SQL END DECLARE SECTION;
+
+	printf("사용할 좌석 번호를 입력해주세요. : ");
+	scanf("%d", &i_seatID);
+
+	EXEC SQL SELECT seat.seatid, DECODE(seat.memberid, 'NULL', 0, 1) 
+	INTO :seatID, :memberid_state
+	FROM seat
+	WHERE seat.seatID = :i_seatID;
+
+	if(sqlca.sqlcode == 1403){
+		if(sqlca.sqlerrd[2] == 0){
+			printf("해당 좌석이 존재하지 않습니다.\n");
+			getch();
+			return;
+		}
+	}
+
+	if(memberid_state == 1){
+		printf("좌석이 이미 사용중입니다.\n");
+		getch();
+		return;
+	}
+
+	printf("회원 아이디를 입력해주세요. : ");
+	scanf("%s", i_memberid);
+
+	printf("비밀번호를 입력해주세요. : ");
+	scanf("%s", i_password);
+	
+	EXEC SQL SELECT memberid, name, leftmint
+	INTO :memberid, :name, :leftmint
+	FROM member
+	WHERE memberid =:i_memberid and password=:i_password;
+
+	if(sqlca.sqlcode == 1403){
+		if(sqlca.sqlerrd[2] == 0){
+			printf("계정 혹은 비밀번호가 잘못되었습니다.\n");
+			getch();
+			return;
+		}
+	}
+
+	memberid.arr[memberid.len] = '\0';
+	if(strcmp(memberid.arr, "NULL") == 0){
+		printf("사용할 수 없는 계정입니다.");
+		getch();
+		return;
+	}
+
+	if(leftmint < 5){
+		printf("충전된 시간이 부족합니다.\n");
+		getch();
+		return;
+	}
+	
+	EXEC SQL UPDATE seat
+		SET memberid = :memberid
+		WHERE seatid = :i_seatID;
+	EXEC SQL COMMIT;
+	getch();
+}
+
+void seatUserGameUpdate(){
+
+	int i = 0;
+    int count = 0;
+    int bfCount = 0;
+    int end_flag = 1;
+	int gamenum=0;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+	int i_seatID;
+	int memberid_state;
+	VARCHAR currentgame[50];
+	VARCHAR gamelist[50][100];
+	char i_memberid[50];
+	char i_password[50];
+	VARCHAR memberid[50];
+	VARCHAR password[50];
+	char new_gamename[50]="";
+
+
+	int seatID;
+	VARCHAR name[50];
+	int leftmint;
+
+	EXEC SQL DECLARE GAMECURSOR CURSOR FOR SELECT gamename
+	FROM gameinfo;
+    EXEC SQL END DECLARE SECTION;
+    
+	printf("게임 상태를 변경할 좌석 번호를 입력해주세요. : ");
+	scanf("%d", &i_seatID);
+
+	EXEC SQL SELECT seat.seatid, DECODE(seat.memberid, 'NULL', 0, 1), NVL(DECODE(seat.gamename, 'NULL', '없음', seat.gamename), '없음')
+	INTO :seatID, :memberid_state, :currentgame
+	FROM seat
+	WHERE seat.seatID = :i_seatID;
+
+	if(sqlca.sqlcode == 1403){
+		if(sqlca.sqlerrd[2] == 0){
+			printf("해당 좌석이 존재하지 않습니다.\n");
+			return;
+		}
+	}
+
+	if(memberid_state == 0){
+		printf("좌석이 비어있습니다.\n");
+		return;
+	}
+	
+	currentgame.arr[currentgame.len] = '\0';
+	printf("현재 플레이 중인 게임 : %s\n\n", currentgame.arr);
+
+	EXEC SQL OPEN GAMECURSOR;
+
+   printf("-------------------------------------------------\n");
+   printf("| no.   |               게임 목록               |\n");
+   printf("-------------------------------------------------\n");
+   // <space> 7 / 35
+   
+    while (end_flag) {
+        EXEC SQL FETCH GAMECURSOR INTO :gamelist;
+        if (sqlca.sqlcode != 0) {
+            if (sqlca.sqlcode == 1403) {
+                end_flag = 0;
+            } else {
+                printf("ERROR : %s\n", sqlca.sqlerrm.sqlerrmc);
+            }
+         count = sqlca.sqlerrd[2] - bfCount;
+         bfCount = sqlca.sqlerrd[2];
+         
+         for( i = 0 ; i < count ; i++){
+			printf("|  ");
+			printf("%-5d", i+1);
+			
+			gamelist[i].arr[gamelist[i].len]='\0';
+			printf("|  ");
+			printf("%-33s", gamelist[i].arr);
+			printf("|  ");
+
+			printf("|\n");
+         }
+		printf("변경할 게임 번호를 선택해주세요. : ");
+		scanf("%d", &gamenum);
+		if(gamenum > count || gamenum < 0){
+			printf("허용 값 범위를 초과하였습니다.\n");
+			return;
+		}
+		strcpy(new_gamename, gamelist[gamenum-1].arr);
+        }
+    }
+    EXEC SQL CLOSE GAMECURSOR;
+	
+	
+	EXEC SQL UPDATE seat
+		SET gamename = :new_gamename
+		WHERE seatid = :i_seatID;
+	EXEC SQL COMMIT;
+	
+	if(sqlca.sqlcode == 1403){
+		if(sqlca.sqlerrd[2] == 0){
+			printf("\n");
+			return;
+		}
+	}
+	printf("정상적으로 수정되었습니다.\n\n");
+	getch();
+}
+
+
+void insertStock(){
+   EXEC SQL BEGIN DECLARE SECTION;
+
+   VARCHAR productName[50];
+   int stock;
+   int price;
+   int purchasePrice;
+   EXEC SQL END DECLARE SECTION;
+   
+      printf("재고를 추가합니다. \n");
+
+      printf("물품명 : ");
+      scanf("%s", productName.arr);
+      productName.len = strlen(productName.arr); 
+      printf("재고수 : ");
+     fflush(stdin);
+     scanf("%d", &stock);
+     printf("구매가격 : ");
+     scanf("%d", &price);
+     printf("판매가격 : ");
+     scanf("%d", &purchasePrice);
+      
+      EXEC SQL INSERT INTO STOCK VALUES (:productName ,:stock ,:price ,:purchasePrice);
+      EXEC SQL COMMIT WORK;
+      printf("%s를 추가하였습니다. \n\n", productName.arr);
+   
+   EXEC SQL COMMIT; 
+   getch();
+}
+
+void updateStock(){
+   int i = 0;
+    int count = 0;
+    int bfCount = 0;
+    int end_flag = 1;
+    EXEC SQL BEGIN DECLARE SECTION;
+   VARCHAR checkProductName[50];
+   int checkStock;
+   int checkPrice;
+   int checkPurchasePrice;
+    EXEC SQL END DECLARE SECTION;
+    
+   printf("업데이트 하고 싶은 상품의 상품명을 입력하세요. -1 입력시 기존 값 사용.\n");
+   scanf("%s",checkProductName.arr);
+   checkProductName.len = strlen(checkProductName.arr);
+   
+    EXEC SQL SELECT STOCK.STOCK, STOCK.PRICE, STOCK.PURCHASEPRICE INTO :checkStock, :checkPrice, :checkPurchasePrice 
+   FROM STOCK 
+   WHERE PRODUCTNAME = :checkProductName;
+   printf("재고 기존값 : %d\n",checkStock);
+   printf("재고 새 값 : ");
+   int tempInput;
+   scanf("%d",&tempInput);
+   if(tempInput!=-1){
+      checkStock=tempInput;
+   }
+   printf("상품 가격 기존값 : %d\n",checkPrice);
+   printf("상품 가격 새 값 : ");
+   scanf("%d",&tempInput);
+   if(tempInput!=-1){
+      checkPrice=tempInput;
+   }
+   printf("판매가 가격 기존값 : %d\n",checkPurchasePrice);
+   printf("판매가 가격 새 값 : ");
+   scanf("%d",&tempInput);
+   if(tempInput!=-1){
+      checkPurchasePrice = tempInput;
+   }
+
+   EXEC SQL UPDATE STOCK
+     SET STOCK = :checkStock,
+     PRICE = :checkPrice,
+     PURCHASEPRICE = :checkPurchasePrice
+     WHERE PRODUCTNAME = :checkProductName;
+   
+   printf("%s의 정보를 수정하였습니다.. \n", checkProductName.arr);
+   
+   EXEC SQL COMMIT;  
+   getch();
+}
+
+void deleteStock(){
+    EXEC SQL BEGIN DECLARE SECTION;
+   VARCHAR productName[100];
+   EXEC SQL END DECLARE SECTION;
+   printf("삭제 하고 싶은 상품의 상품명을 입력하세요.");
+   printf("상품명 : ");
+   scanf("%s",productName.arr);
+   productName.len = strlen(productName.arr);
+   EXEC SQL DELETE STOCK WHERE PRODUCTNAME=:productName;
+   EXEC SQL COMMIT;
+   printf("%s의 상품을 삭제했습니다...\n",productName.arr);
+   getch();
+}
+
+void selectSale(){
+    int i = 0;
+    int count = 0;
+    int bfCount = 0;
+    int end_flag = 1;
+    EXEC SQL BEGIN DECLARE SECTION;
+   int saleID[100];
+    VARCHAR memberID[100][50];
+    VARCHAR name[100][50];
+    VARCHAR DATE[100][20];
+    VARCHAR productName[100][50];
+    int price[100];
+    EXEC SQL DECLARE SALECURSOR CURSOR FOR SELECT FOODSALE.SALEID, FOODSALE.MEMBERID, MEMBER.NAME, TO_CHAR(DATETIME, 'RRRR-MM-DD'), PRODUCTNAME, PRICE
+FROM FOODSALE,
+     MEMBER
+WHERE FOODSALE.MEMBERID = MEMBER.MEMBERID
+UNION
+SELECT PCSALE.SALEID, PCSALE.MEMBERID, MEMBER.NAME, TO_CHAR(DATETIME, 'RRRR-MM-DD'), PCSALE.PRODUCTNAME, PRICE
+FROM PCSALE,
+     MEMBER
+WHERE PCSALE.MEMBERID = MEMBER.MEMBERID;
+    EXEC SQL END DECLARE SECTION;
+    EXEC SQL OPEN SALECURSOR;
+   
+   printf("---------------------------------------------------------------------------------------\n");
+   printf("|  no.  |       ID       |   name   |  purchase date  |   product name   | paid money |\n");
+   printf("---------------------------------------------------------------------------------------\n");
+   // <space> no. : 7 , ID : 16 , name : 10 , purchase date : 17 , product name : 18 paid money : 12
+    while (end_flag) {
+        EXEC SQL FETCH SALECURSOR INTO:
+        saleID, :memberID, :name, :DATE, :productName, :price;
+        if (sqlca.sqlcode != 0) {
+            if (sqlca.sqlcode == 1403) {
+                end_flag = 0;
+            } else {
+                //printf("ERROR : %s\n", sqlca.sqlerrm.sqlerrmc);
+            }
+         count = sqlca.sqlerrd[2] - bfCount;
+         bfCount = sqlca.sqlerrd[2];
+       
+         for( i = 0 ; i < count ; i++){
+            printf("|  ");
+            printf("%-5d", saleID[i]);
+            printf("|  ");
+            memberID[i].arr[memberID[i].len]='\0';
+            printf("%-14s", memberID[i].arr);
+            printf("|  ");
+            name[i].arr[name[i].len]='\0';
+            printf("%-8s", name[i].arr);
+            printf("|  ");
+            DATE[i].arr[DATE[i].len]='\0';
+            printf("%-15s", DATE[i].arr);
+            printf("|  ");
+         productName[i].arr[productName[i].len]='\0';
+            printf("%-16s", productName[i].arr);
+            printf("|  ");
+            printf("%-10d", price[i]);
+            printf("|");
+            printf("\n");
+         }
+            
+        }
+      
+   printf("---------------------------------------------------------------------------------------\n");
+   printf("select count : %d\n",sqlca.sqlerrd[2]);
+    }
+    EXEC SQL CLOSE SALECURSOR;
+	getch();
+}
+
+void PCInsert(){
+   printf("-----------------------가격표------------------\n");
+   printf("| 상품번호  |     금액     |      시간(min)   |\n");
+   printf("-----------------------------------------------\n");
+   printf("|     1     |     1000     |       60분       |\n");
+   printf("|     2     |     2000     |       120분      |\n");
+   printf("|     3     |     5000     |       330분      |\n");
+   printf("|     4     |     10000    |       660분      |\n");
+   printf("-----------------------------------------------\n");
+   
+   EXEC SQL BEGIN DECLARE SECTION;
+   
+  int saleID;
+   char memberID[50];
+    char productName[100];
+    int price;
+   int paidmoney;
+   int leftmint;
+   EXEC SQL END DECLARE SECTION;
+   
+   printf("회원 ID를 입력해주세요. : ");
+   scanf("%s", memberID);
+   
+   EXEC SQL SELECT PAIDMONEY, LEFTMINT 
+   INTO :paidmoney, :leftmint
+   FROM MEMBER
+   WHERE MEMBERID IN (SELECT memberid FROM member WHERE memberid = :memberID);
+   
+   if(sqlca.sqlcode == 1403){
+      if(sqlca.sqlerrd[2] == 0){
+         printf("해당 회원이 존재하지 않습니다.\n");
+         return;
+      }
+   }
+      printf("원하는 상품번호를 입력해주세요. \n");
+     int choice=0;
+     scanf("%d",&choice);
+     switch(choice){
+      case 1: 
+      strcpy(productName,"60분");
+      price = 1000;
+      EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 1);
+      EXEC SQL INSERT INTO PCSALE VALUES(SALE_SEQUENCE.currval ,:memberID , SYSDATE,:productName, :price);
+      
+      EXEC SQL UPDATE member
+      SET paidmoney = paidmoney+price,
+      leftmint =leftmint+ 60
+      WHERE memberid = :memberID;
+      break;
+	     case 2:
+      strcpy(productName,"120분");
+      price = 2000;
+      EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 1);
+      EXEC SQL INSERT INTO PCSALE VALUES(SALE_SEQUENCE.currval ,:memberID , SYSDATE,:productName, :price);
+      
+      EXEC SQL UPDATE member
+      SET paidmoney = paidmoney+:price,
+      leftmint =leftmint+ 120
+      WHERE memberid = :memberID;
+      break;
+   case 3:
+      strcpy(productName,"330분");
+      price = 5000;
+      EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 1);
+      EXEC SQL INSERT INTO PCSALE VALUES(SALE_SEQUENCE.currval ,:memberID , SYSDATE,:productName, :price);
+      
+      EXEC SQL UPDATE member
+      SET paidmoney = paidmoney+:price,
+      leftmint =leftmint+ 330
+      WHERE memberid = :memberID;
+      break;
+   case 4:
+      strcpy(productName,"660분");
+      price = 10000;
+      EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 1);
+      EXEC SQL INSERT INTO PCSALE VALUES(SALE_SEQUENCE.currval ,:memberID , SYSDATE,:productName, :price);
+      
+      EXEC SQL UPDATE member
+      SET paidmoney = paidmoney+:price,
+      leftmint =leftmint+ 660
+      WHERE memberid = :memberID;
+      break;
+   default: 
+   printf("잘못입력하셨습니다");
+
+     }
+     
+      EXEC SQL COMMIT WORK;
+      printf("PC매출 삽입 완료");
+   
+   EXEC SQL COMMIT; 
+   getch();
+}
+
+void PCDelete(){
+   EXEC SQL BEGIN DECLARE SECTION;
+   int saleID;
+   VARCHAR memberID[50];
+   int price;
+   int time;
+   EXEC SQL END DECLARE SECTION;
+   printf("환불할 주문번호를 입력해주세요 : ");
+   scanf("%d", &saleID);
+
+   
+   EXEC SQL SELECT MEMBERID,PRICE
+   INTO :memberID,:price
+   FROM PCSALE
+   WHERE SALEID IN (SELECT SALEID FROM PCSALE WHERE saleid = :saleID);
+   if (price==1000)
+   time = 60;
+   else if (price==2000)
+   time = 120;
+   else if (price==5000)
+   time = 330;
+   else if (price==10000)
+   time = 660;
+   EXEC SQL UPDATE member
+      SET paidmoney = paidmoney-:price,
+     leftmint = leftmint-:time
+      WHERE memberid = :memberID;
+
+   EXEC SQL DELETE FROM pcsale WHERE
+   saleid = :saleID;
+   EXEC SQL COMMIT;
+   printf("삭제하였습니다. \n");
+}
+
+void FoodInsert(){
+   printf("-----------------------가격표------------------\n");
+   printf("| 상품번호  |     금액     |       상품명     |\n");
+   printf("-----------------------------------------------\n");
+   printf("|     1     |     1400     |    신라면 블랙   |\n");
+   printf("|     2     |     2500     |       블랑       |\n");
+   printf("|     3     |     1500     |     프링글스     |\n");
+   printf("|     4     |     1200     |      새우탕      |\n");
+   printf("|     5     |     5000     |      호가든      |\n");
+   printf("-----------------------------------------------\n");
+   
+   EXEC SQL BEGIN DECLARE SECTION;
+   
+  int saleID;
+   char memberID[50];
+    char productName[100];
+    int price;
+   int paidmoney;
+   EXEC SQL END DECLARE SECTION;
+   
+   printf("회원 ID를 입력해주세요. : ");
+   scanf("%s", memberID);
+   
+   if(sqlca.sqlcode == 1403){
+      if(sqlca.sqlerrd[2] == 0){
+         printf("해당 회원이 존재하지 않습니다.\n");
+         return;
+      }
+   }
+      EXEC SQL SELECT PAIDMONEY
+   INTO :paidmoney
+   FROM MEMBER
+   WHERE MEMBERID IN (SELECT memberid FROM member WHERE memberid = :memberID);
+
+      printf("원하는 상품번호를 입력해주세요. \n");
+     int choice=0;
+     scanf("%d",&choice);
+     switch(choice){
+      case 1: 
+      strcpy(productName,"신라면블랙");
+      price = 1400;
+      EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 2);
+      EXEC SQL INSERT INTO FOODSALE VALUES(SALE_SEQUENCE.currval ,:memberID , SYSDATE,:productName, :price);
+      
+      EXEC SQL UPDATE member
+      SET paidmoney = paidmoney+:price
+      WHERE memberid = :memberID;
+      
+      EXEC SQL UPDATE stock
+      SET stock =stock-1
+      WHERE productname = :productName;
+      break;
+      case 2: 
+      strcpy(productName,"블랑");
+      price = 2500;
+      EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 2);
+      EXEC SQL INSERT INTO FOODSALE VALUES(SALE_SEQUENCE.currval ,:memberID , SYSDATE,:productName, :price);
+      
+      EXEC SQL UPDATE member
+      SET paidmoney = paidmoney+:price
+      WHERE memberid = :memberID;
+     
+      EXEC SQL UPDATE stock
+      SET stock =stock-1
+      WHERE productname = :productName;
+      break;
+      case 3: 
+      strcpy(productName,"프링글스");
+      price = 1500;
+      EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 2);
+      EXEC SQL INSERT INTO FOODSALE VALUES(SALE_SEQUENCE.currval ,:memberID , SYSDATE,:productName, :price);
+      
+      EXEC SQL UPDATE member
+      SET paidmoney = paidmoney+:price
+      WHERE memberid = :memberID;
+      EXEC SQL UPDATE stock
+      SET stock =stock-1
+      WHERE productname = :productName;
+      break;
+      case 4: 
+      strcpy(productName,"새우탕");
+      price = 1200;
+      EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 2);
+      EXEC SQL INSERT INTO FOODSALE VALUES(SALE_SEQUENCE.currval ,:memberID , SYSDATE,:productName, :price);
+      
+      EXEC SQL UPDATE member
+      SET paidmoney = paidmoney+:price
+      WHERE memberid = :memberID;
+      EXEC SQL UPDATE stock
+      SET stock =stock-1
+      WHERE productname = :productName;
+      break;
+      case 5: 
+      strcpy(productName,"호가든");
+      price = 5000;
+      EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 2);
+      EXEC SQL INSERT INTO FOODSALE VALUES(SALE_SEQUENCE.currval ,:memberID , SYSDATE,:productName, :price);
+      
+      EXEC SQL UPDATE member
+      SET paidmoney = paidmoney+5000
+      WHERE memberid = :memberID;
+      EXEC SQL UPDATE stock
+      SET stock =stock-1
+      WHERE productname = :productName;
+      break;
+     default:
+     printf("없는 번호입니다");
+     }
+     
+      
+      EXEC SQL COMMIT WORK;
+      printf("FOOD매출 삽입 완료");
+   
+   EXEC SQL COMMIT; 
+   
+}
+
+
+void FoodDelete(){
+   EXEC SQL BEGIN DECLARE SECTION;
+   int saleID;
+   VARCHAR productName[50];
+   VARCHAR memberID[50];
+   int price;
+
+   EXEC SQL END DECLARE SECTION;
+   printf("환불할 주문번호를 입력해주세요 : ");
+   scanf("%d", &saleID);
+
+      EXEC SQL SELECT PRODUCTNAME, MEMBERID, PRICE
+   INTO :productName, :memberID, :price
+   FROM FOODSALE
+   WHERE SALEID IN (SELECT SALEID FROM FOODSALE WHERE saleid = :saleID);
+
+   memberID.arr[memberID.len]='\0';
+   productName.arr[productName.len]='\0';
+
+   EXEC SQL UPDATE member
+      SET paidmoney = paidmoney-:price
+      WHERE memberid = :memberID;
+	EXEC SQL COMMIT;
+	
+   EXEC SQL UPDATE stock
+   SET stock =stock+1
+   WHERE productname = :productName;
+   EXEC SQL COMMIT;
+
+   EXEC SQL DELETE FROM foodsale WHERE
+   saleid = :saleID;
+   EXEC SQL COMMIT;
+   printf("삭제하였습니다. \n");
+   getch();
+}
+
+void init(){
+   EXEC SQL DROP TABLE GAMEDATA;
+   EXEC SQL DROP TABLE GAMEINFO;
+   EXEC SQL DROP TABLE COMPUTERINFO;
+   EXEC SQL DROP TABLE PCSALE;
+   EXEC SQL DROP TABLE FOODSALE;
+   EXEC SQL DROP TABLE SALE;
+   EXEC SQL DROP TABLE STOCK;
+   EXEC SQL DROP TABLE SEAT;
+   EXEC SQL DROP TABLE SEATINFO;
+   EXEC SQL DROP TABLE CHARGEINFO;
+   EXEC SQL DROP TABLE BLACKLIST;
+   EXEC SQL DROP TABLE MEMBER;
+   printf("삭제되었습니다\n");
+   EXEC SQL CREATE TABLE MEMBER
+   (
+      MEMBERID  VARCHAR2(50) PRIMARY KEY,
+      NAME      VARCHAR2(50)      NOT NULL,
+      PASSWORD  VARCHAR2(50)      NOT NULL,
+      BIRTHDAY  DATE              NOT NULL,
+      PAIDMONEY INTEGER DEFAULT 0 NOT NULL,
+      LEFTMINT  INTEGER DEFAULT 0 NOT NULL
+   );
+   EXEC SQL CREATE TABLE BLACKLIST
+   (
+      MEMBERID VARCHAR2(50) PRIMARY KEY,
+      NAME     VARCHAR2(50) NOT NULL,
+      REASON   VARCHAR2(50) NOT NULL,
+      FOREIGN KEY (MEMBERID) REFERENCES MEMBER
+   );
+   EXEC SQL CREATE TABLE CHARGEINFO
+   (
+      TIMEPAY    INTEGER PRIMARY KEY,
+      MEMBERC    INTEGER NOT NULL,
+      NONMEMBERC INTEGER NOT NULL
+   );
+   EXEC SQL CREATE TABLE SEATINFO
+   (
+      SEATTYPEID INTEGER PRIMARY KEY,
+      SEATTYPE   VARCHAR2(20) NOT NULL,
+      RATE       INTEGER      NOT NULL
+   );
+   EXEC SQL CREATE TABLE SEAT
+   (
+      SEATID     INTEGER PRIMARY KEY,
+      SEATTYPEID INTEGER NOT NULL,
+      MEMBERID   VARCHAR2(50),
+      GAMENAME   VARCHAR2(50),
+      FOREIGN KEY (MEMBERID) REFERENCES MEMBER,
+      FOREIGN KEY (SEATTYPEID) REFERENCES SEATINFO
+   );
+   EXEC SQL CREATE TABLE STOCK
+   (
+      PRODUCTNAME   VARCHAR2(50) PRIMARY KEY,
+      STOCK         INTEGER DEFAULT 0 NOT NULL,
+      PRICE         INTEGER DEFAULT 0 NOT NULL,
+      PURCHASEPRICE INTEGER DEFAULT 0 NOT NULL
+   );
+   EXEC SQL CREATE TABLE SALE
+   (
+      SALEID   INTEGER PRIMARY KEY,
+      SALETYPE INTEGER NOT NULL
+   );
+   EXEC SQL CREATE TABLE FOODSALE
+   (
+      SALEID      INTEGER PRIMARY KEY,
+      MEMBERID    VARCHAR2(50)            NOT NULL,
+      DATETIME    DATE    DEFAULT SYSDATE NOT NULL,
+      PRODUCTNAME VARCHAR2(50)            NOT NULL,
+      PRICE       INTEGER DEFAULT 0       NOT NULL,
+      FOREIGN KEY (SALEID) REFERENCES SALE,
+      FOREIGN KEY (MEMBERID) REFERENCES MEMBER,
+      FOREIGN KEY (PRODUCTNAME) REFERENCES STOCK
+   );
+   printf("푸드생성\n");
+   EXEC SQL CREATE TABLE PCSALE
+   (
+      SALEID   INTEGER PRIMARY KEY,
+      MEMBERID VARCHAR2(50)            NOT NULL,
+      DATETIME DATE    DEFAULT SYSDATE NOT NULL,
+     PRODUCTNAME VARCHAR2(50)         NOT NULL,
+      PRICE    INTEGER DEFAULT 0       NOT NULL,
+      FOREIGN KEY (SALEID) REFERENCES SALE,
+      FOREIGN KEY (MEMBERID) REFERENCES MEMBER
+   );
+   EXEC SQL CREATE TABLE COMPUTERINFO
+   (
+      SEATID       INTEGER PRIMARY KEY,
+      CPUINFO      VARCHAR2(100) DEFAULT 'AMD 라이젠9 3900X (마티스)'                                          NOT NULL,
+      RAMINFO      VARCHAR2(100) DEFAULT 'CORSAIRDDR4 32G PC 4-25600 CL16 VENGEANCE PRO RGB BLACK(8GX4)' NOT NULL,
+      GRAPHICINFO  VARCHAR2(100) DEFAULT 'ZOTAC GAMING 지포스RTX 2080 SUPERAMPCORE RGB D6 8GB'              NOT NULL,
+      MONITORINFO  VARCHAR2(100) DEFAULT 'MSI 옵틱스AG 32C 커브드 게이밍144 무결점'                                  NOT NULL,
+      SSDINFO      VARCHAR2(100) DEFAULT '삼성전자970 EVO PlusM 2 2280(1TB)'                                 NOT NULL,
+      MAINBOARD    VARCHAR2(100) DEFAULT 'GIGABYTEX570 AORUSMASTER 피씨디렉트'                                NOT NULL,
+      CASEINFO     VARCHAR2(100) DEFAULT '리안리PC-O11 Dynamic(WHITE)'                                      NOT NULL,
+      KEYBOARDINFO VARCHAR2(100) DEFAULT 'Wooting one(청축)'                                               NOT NULL,
+      MOUSEINFO    VARCHAR2(100) DEFAULT '로지텍G PRO WIRELESS(정품)'                                         NOT NULL,
+      SPEAKERINFO  VARCHAR2(100) DEFAULT 'Britz 브리츠 인터내셔널BR-1700BT'                                      NOT NULL,
+      POWERINFO    VARCHAR2(100) DEFAULT 'EnermaxREVOLUTIOND.F.ERF650AWT 80Plus GoldFull Modular'        NOT NULL,
+      COOLERINFO   VARCHAR2(100) DEFAULT 'EVGACLC280 Liquid'                                             NOT NULL,
+      OSINFO       VARCHAR2(100) DEFAULT 'Microsoft Window 10 Pro(처음사용자용 한글)'                            NOT NULL,
+      HEADSETINFO  VARCHAR2(100) DEFAULT 'CORSAIRVOID PRO RGB WIRELESS(정품)'                              NOT NULL,
+      FOREIGN KEY (SEATID) REFERENCES SEAT
+   );
+   EXEC SQL CREATE TABLE GAMEINFO
+   (
+      GAMENAME    VARCHAR2(50) PRIMARY KEY NOT NULL,
+      GAMECOMPANY VARCHAR2(50)             NOT NULL
+   );
+   EXEC SQL CREATE TABLE GAMEDATA
+   (
+      MEMBERID  VARCHAR2(50) PRIMARY KEY NOT NULL,
+      DATETIME  DATE                     NOT NULL,
+      GAMENAME  VARCHAR2(50)             NOT NULL,
+      STARTTIME DATE,
+      ENDTIME   DATE,
+      FOREIGN KEY (MEMBERID) REFERENCES MEMBER (MEMBERID),
+      FOREIGN KEY (GAMENAME) REFERENCES GAMEINFO (GAMENAME)
+   );
+   EXEC SQL INSERT INTO MEMBER(MEMBERID, NAME, PASSWORD, BIRTHDAY, PAIDMONEY, LEFTMINT)
+    VALUES ('ksk1234', '김성각', '12345', TO_DATE('1968-08-27','RRRR-MM-DD'), 20000, 120);
+   EXEC SQL INSERT INTO MEMBER(MEMBERID, NAME, PASSWORD, BIRTHDAY, PAIDMONEY, LEFTMINT)
+    VALUES ('nyw1234', '남영우', '911', TO_DATE('1995-12-20', 'RRRR-MM-DD'), 150000, 180);
+   EXEC SQL INSERT INTO MEMBER(MEMBERID, NAME, PASSWORD, BIRTHDAY, PAIDMONEY, LEFTMINT)
+    VALUES ('khj1234', '김희정', '916', TO_DATE('1999-01-21', 'RRRR-MM-DD'), 150000, 240);
+   EXEC SQL INSERT INTO MEMBER(MEMBERID, NAME, PASSWORD, BIRTHDAY, PAIDMONEY, LEFTMINT)
+    VALUES ('khj12345', '김현직', '123456', TO_DATE('1996-09-09', 'RRRR-MM-DD'), 150000, 180);
+   EXEC SQL INSERT INTO MEMBER(MEMBERID, NAME, PASSWORD, BIRTHDAY) VALUES ('NULL', '빈자리', 'NULL', TO_DATE('2019-11-24','RRRR-MM-DD'));
+   EXEC SQL INSERT INTO MEMBER(MEMBERID, NAME, PASSWORD, BIRTHDAY, PAIDMONEY, LEFTMINT)
+    VALUES ('lds1234', '이동석', '920', TO_DATE('1234-12-23', 'RRRR-MM-DD'), 0, 0);
+   EXEC SQL INSERT INTO MEMBER(memberid, name, password, birthday, paidmoney, LEFTMINT)
+   VALUES ('ljm123', '이재민', '709', TO_DATE('1234-12-12', 'RRRR-MM-DD'), 10000, 60);
+   EXEC SQL UPDATE SEAT SET MEMBERID = 'ljm123' where seatid = 9;
+   EXEC SQL INSERT INTO BLACKLIST(MEMBERID, NAME, REASON)
+    VALUES ('ksk1234', '김성각', '본체 발로 차서 부숨');
+   EXEC SQL INSERT INTO MEMBER(MEMBERID, NAME, PASSWORD, BIRTHDAY, PAIDMONEY, LEFTMINT)
+    VALUES ('eio1234', '야옹', '333', TO_DATE('2017-10-23', 'RRRR-MM-DD'), 0, 0);
+   EXEC SQL INSERT INTO CHARGEINFO(TIMEPAY, MEMBERC, NONMEMBERC)
+    VALUES (1, 1500, 2000);
+   EXEC SQL INSERT INTO SEATINFO(SEATTYPEID, SEATTYPE, RATE) VALUES (1, '고급', 1.5);
+   EXEC SQL INSERT INTO SEATINFO(SEATTYPEID, SEATTYPE, RATE) VALUES (2, '일반', 1);
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (1, 1, 'nyw1234', '히어로즈 오브 더 스톰');
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (2, 1, 'khj12345', '히어로즈 오브 더 스톰');
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (3, 1, 'NULL', 'NULL');
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (4, 1, 'NULL', 'NULL');
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (5, 1, 'NULL', 'NULL');
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (6, 1, 'NULL', 'NULL');
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (7, 1, 'NULL', 'NULL');
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (8, 1, 'NULL', 'NULL');
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (9, 1, 'NULL', 'NULL');
+   EXEC SQL INSERT INTO SEAT(SEATID, SEATTYPEID, MEMBERID, GAMENAME)
+    VALUES (10, 1, 'NULL', 'NULL');
+   EXEC SQL INSERT INTO STOCK(PRODUCTNAME, STOCK, PRICE, PURCHASEPRICE)
+    VALUES ('IntelRealSense', 100, 200000, 1000000);
+   EXEC SQL INSERT INTO STOCK(PRODUCTNAME, STOCK, PRICE, PURCHASEPRICE)
+    VALUES ('신라면블랙', 904, 1400, 3000);
+   EXEC SQL INSERT INTO STOCK(PRODUCTNAME, STOCK, PRICE, PURCHASEPRICE)
+    VALUES ('블랑', 10, 2500, 3000);
+   EXEC SQL INSERT INTO STOCK(PRODUCTNAME, STOCK, PRICE, PURCHASEPRICE)
+    VALUES ('새우탕', 30, 900, 1200);
+   EXEC SQL INSERT INTO STOCK(PRODUCTNAME, STOCK, PRICE, PURCHASEPRICE)
+    VALUES ('호가든', 42, 5000, 7000);
+
+   EXEC SQL INSERT INTO GAMEINFO(GAMENAME, GAMECOMPANY)
+    VALUES ('히어로즈 오브 더 스톰', 'Blizzard');
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (1);
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (2);
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (3);
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (4);
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (5);
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (6);
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (7);
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (8);
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (9);
+   EXEC SQL INSERT INTO COMPUTERINFO(SEATID)
+    VALUES (10);
+   
+    EXEC SQL INSERT INTO gameinfo VALUES ('Java', 'Oracle');
+    EXEC SQL INSERT INTO gameinfo VALUES ('IntelliJ', 'jetbrains');
+    EXEC SQL INSERT INTO gameinfo VALUES ('리그 오브 레전드', '라이엇 게임즈');
+    EXEC SQL INSERT INTO gameinfo VALUES ('카트라이더', 'nexon');
+    EXEC SQL INSERT INTO gameinfo VALUES ('배틀그라운드', 'PUBG Corporation');
+    EXEC SQL INSERT INTO gameinfo VALUES ('오버워치', 'Blizzard');
+    EXEC SQL INSERT INTO stock(productname, stock, price, purchaseprice) VALUES ('프링글스', 500, 1500, 5000);
+    EXEC SQL INSERT INTO stock(productname, stock, price, purchaseprice) VALUES ('새우탕', 30, 900, 1200);
+   EXEC SQL DROP SEQUENCE SALE_SEQUENCE;
+   EXEC SQL CREATE SEQUENCE SALE_SEQUENCE START WITH 1 INCREMENT BY 1 MAXVALUE 1000000 CYCLE NOCACHE; /* SALE 용 */
+    EXEC SQL INSERT INTO SALE
+    VALUES (SALE_SEQUENCE.nextval, 1);
+    EXEC SQL INSERT INTO PCSALE
+   VALUES (SALE_SEQUENCE.currval, 'nyw1234', TO_DATE('2019-12-01', 'RRRR-MM-DD'),'1시간', 1000);
+    EXEC SQL INSERT INTO SALE
+    VALUES (SALE_SEQUENCE.nextval, 1);
+    EXEC SQL INSERT INTO PCSALE
+    VALUES (SALE_SEQUENCE.currval, 'khj1234', TO_DATE('2019-12-01', 'RRRR-MM-DD'),'2시간', 2000);
+    EXEC SQL INSERT INTO SALE
+    VALUES (SALE_SEQUENCE.nextval, 1);
+    EXEC SQL INSERT INTO PCSALE
+    VALUES (SALE_SEQUENCE.currval, 'khj12345', TO_DATE('2019-12-01', 'RRRR-MM-DD'),'11시간', 10000);
+    EXEC SQL INSERT INTO SALE
+    VALUES (SALE_SEQUENCE.nextval, 1);
+    EXEC SQL INSERT INTO PCSALE
+    VALUES (SALE_SEQUENCE.currval, 'ksk1234', TO_DATE('2019-12-03', 'RRRR-MM-DD'),'24시간', 20000);
+   EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 2);
+   EXEC SQL INSERT INTO FOODSALE VALUES(SALE_SEQUENCE.currval, 'lds1234', TO_DATE('2019-12-07','RRRR-MM-DD'), 'IntelRealSense', 1000000);
+   EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 2);
+   EXEC SQL INSERT INTO FOODSALE VALUES(SALE_SEQUENCE.currval, 'lds1234', TO_DATE('2019-12-08','RRRR-MM-DD'), 'IntelRealSense', 1000000);
+   EXEC SQL INSERT INTO SALE VALUES(SALE_SEQUENCE.nextval, 2);
+   EXEC SQL INSERT INTO FOODSALE VALUES(SALE_SEQUENCE.currval, 'lds1234', TO_DATE('2019-12-08','RRRR-MM-DD'), '블랑', 1000000);
+   //printf("\7Connect error: %s ", sqlca.sqlerrm.sqlerrmc);
+   EXEC SQL COMMIT WORK;   
+   printf("디비!! 초기화!!! 되었습니다!!\n\n");
+}
+
+void DB_connect() {
+   strcpy((char *)uid.arr, "ZSTB1@//sedb.deu.ac.kr:1521/orcl");
+   uid.len = (short) strlen((char *)uid.arr);
+   strcpy((char *)pwd.arr, "34567812");
+   pwd.len = (short) strlen((char *)pwd.arr);
+   
+   EXEC SQL CONNECT :uid IDENTIFIED BY :pwd;
+
+   if(sqlca.sqlcode != 0 && sqlca.sqlcode != -1405) { //connect
+      printf("\7Connect error: %s ", sqlca.sqlerrm.sqlerrmc);
+      getch(); 
+      exit(-1);
+   }
+   printf("Oracle Connect SUCCESS by %s\n", uid.arr);
+}
+
+void sql_error(char *msg) {
+   char err_msg[128];      size_t buf_len, msg_len;
+   EXEC SQL WHENEVER SQLERROR CONTINUE;
+   printf("\n%s\n",msg);      
+   buf_len = sizeof(err_msg);
+   sqlglm(err_msg, &buf_len, &msg_len);   
+   printf("%.*s\n",msg_len,err_msg);
+   getch();
+   EXEC SQL ROLLBACK WORK;
+   exit(-1);
+}
